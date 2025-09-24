@@ -42,6 +42,9 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           enable-AzPSSession: true
 
+      - name: Set Azure Subscription
+        run: az account set --subscription "Deakin labs DS - 1209"
+
       - name: Set Kubernetes context (get AKS credentials)
         run: |
           az aks get-credentials --resource-group deakinuni --name hashini --overwrite-existing
