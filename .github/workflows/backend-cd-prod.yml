@@ -16,11 +16,14 @@ on:
         required: true
         default: 'hashini'
   # Trigger this workflow after CI workflow succeeds
-  
-  workflow_run:
-    workflows: ["CD - Deploy Backend Services to AKS"]
-    types:
-        - completed
+
+  push:
+    branches:
+        - main
+    workflow_run:
+      workflows: ["CD - Deploy Backend Services to AKS"]
+      types:
+          - completed
 
 
 jobs:
