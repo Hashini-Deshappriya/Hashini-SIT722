@@ -111,6 +111,5 @@ jobs:
         id: get_order_ip
         run: echo "external_ip=${{ env.ORDER_IP }}" >> $GITHUB_OUTPUT
 
-      
       - name: Logout from Azure
         run: az logout
