@@ -144,3 +144,51 @@ jobs:
     - name: Logout from Azure
       run: az logout
       if: always()
+
+  # Job 3: Deploy to staging
+    runs-on: ubuntu-latest
+    needs: build_and_push_images   # Wait for Stage 1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Login to Azure (for AKS or Kubernetes cluster)
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Set up kubectl
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.27.3'
+
+      # Create temporary staging namespace
+      - name: Create staging namespace
+        run: |
+          kubectl create namespace staging-${{ github.run_id }}
+
+      # Deploy Product Service to staging
+      - name: Deploy Product Service
+        run: |
+          kubectl apply -f k8s/product-service.yaml -n staging-${{ github.run_id }}
+          kubectl apply -f k8s/product-db.yaml -n staging-${{ github.run_id }}
+
+      # Deploy Order Service to staging
+      - name: Deploy Order Service
+        run: |
+          kubectl apply -f k8s/order-service.yaml -n staging-${{ github.run_id }}
+          kubectl apply -f k8s/order-db.yaml -n staging-${{ github.run_id }}
+
+      # Optional: wait for pods to be ready
+      - name: Wait for pods
+        run: |
+          kubectl wait --for=condition=ready pod -l app=product-service -n staging-${{ github.run_id }} --timeout=180s
+          kubectl wait --for=condition=ready pod -l app=order-service -n staging-${{ github.run_id }} --timeout=180s
+
+      # Delete temporary staging namespace after testing
+      - name: Clean up staging
+        if: always()
+        run: |
+          kubectl delete namespace staging-${{ github.run_id }}
