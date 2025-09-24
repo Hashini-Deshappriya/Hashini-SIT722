@@ -12,6 +12,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+import os
+from fastapi import FastAPI
+
 # Make PRODUCT_SERVICE_URL configurable via env var (better for CI/CD + staging)
 PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", "http://localhost:8001")
 
