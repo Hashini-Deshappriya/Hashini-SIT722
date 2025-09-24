@@ -24,9 +24,9 @@ on:
 
 
 jobs:
-  deploy_backend:
+  deploy_staging:
     runs-on: ubuntu-latest
-    environment: Production
+    environment: Staging
     
     outputs:
       PRODUCT_API_IP: ${{ steps.get_product_ip.outputs.external_ip }}
@@ -50,7 +50,11 @@ jobs:
         run: |
           az aks update --name ${{ secrets.AKS_CLUSTER_NAME }} --resource-group ${{ secrets.AKS_RESOURCE_GROUP }} --attach-acr ${{ secrets.AZURE_CONTAINER_REGISTRY }}
 
-      - name: Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases)
+      - name: Create temporary staging namespace
+        run: |
+          kubectl create namespace staging
+
+      - name: Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases) to Staging
         run: |
           echo "Deploying backend infrastructure..."
           cd k8s/
@@ -59,7 +63,7 @@ jobs:
           kubectl apply -f product-db.yaml
           kubectl apply -f order-db.yaml
 
-      - name: Deploy Backend Microservices (Product, Order)
+      - name: Deploy Backend Microservices (Product, Order) to Staging
         run: |
           echo "Deploying backend microservices..."
           cd k8s/
@@ -103,6 +107,10 @@ jobs:
       - name: Capture Order Service IP for Workflow Output
         id: get_order_ip
         run: echo "external_ip=${{ env.ORDER_IP }}" >> $GITHUB_OUTPUT
+
+      - name: Clean up temporary staging environment
+        if: always()
+        run: kubectl delete namespace staging
 
       - name: Logout from Azure
         run: az logout
