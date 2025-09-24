@@ -1,4 +1,4 @@
-name: CD - Deploy Backend Services to AKS
+name: CD - Deploy Backend Services to Production
 
 on:
   workflow_dispatch:
@@ -18,15 +18,15 @@ on:
   # Trigger this workflow after CI workflow succeeds
   
   workflow_run:
-    workflows: ["Backend CI - Test, Build and Push Images to ACR"]
+    workflows: ["CD - Deploy Backend Services to AKS"]
     types:
         - completed
 
 
 jobs:
-  deploy_staging:
+  deploy_production:
     runs-on: ubuntu-latest
-    environment: Staging
+    environment: Production
     
     outputs:
       PRODUCT_API_IP: ${{ steps.get_product_ip.outputs.external_ip }}
@@ -53,11 +53,11 @@ jobs:
         run: |
           az aks update --name ${{ secrets.AKS_CLUSTER_NAME }} --resource-group ${{ secrets.AKS_RESOURCE_GROUP }} --attach-acr ${{ secrets.AZURE_CONTAINER_REGISTRY }}
 
-      - name: Create temporary staging namespace
+      - name: Create production namespace
         run: |
-          kubectl create namespace staging
+          kubectl create namespace production
 
-      - name: Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases) to Staging
+      - name: Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases) to Production
         run: |
           echo "Deploying backend infrastructure..."
           cd k8s/
@@ -66,7 +66,7 @@ jobs:
           kubectl apply -f product-db.yaml
           kubectl apply -f order-db.yaml
 
-      - name: Deploy Backend Microservices (Product, Order) to Staging
+      - name: Deploy Backend Microservices (Product, Order) to Production
         run: |
           echo "Deploying backend microservices..."
           cd k8s/
@@ -111,9 +111,6 @@ jobs:
         id: get_order_ip
         run: echo "external_ip=${{ env.ORDER_IP }}" >> $GITHUB_OUTPUT
 
-      - name: Clean up temporary staging environment
-        if: always()
-        run: kubectl delete namespace staging
-
+      
       - name: Logout from Azure
         run: az logout

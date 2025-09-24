@@ -5,12 +5,18 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from app.db import SessionLocal, engine, get_db
-from app.main import PRODUCT_SERVICE_URL, app
+from app.main import app
 from app.models import Base, Order, OrderItem
 
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
+
+import os
+from fastapi import FastAPI
+
+# Make PRODUCT_SERVICE_URL configurable via env var (better for CI/CD + staging)
+PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", "http://localhost:8001")
 
 # Suppress noisy logs from SQLAlchemy/FastAPI/Uvicorn during tests for cleaner output
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
