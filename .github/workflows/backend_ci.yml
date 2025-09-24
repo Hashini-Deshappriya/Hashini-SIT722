@@ -8,10 +8,10 @@ on:
   # Manual trigger
   workflow_dispatch:
 
-  # Automatically on pushes to main branch
+  # Automatically on pushes to testing branch
   push:
     branches:
-      - main
+      - testing
     paths: # Only trigger if changes are in backend directories
       - 'backend/**'
       - '.github/workflows/backend_ci.yml' # Trigger if this workflow file changes
@@ -112,7 +112,7 @@ jobs:
   # Job 2: Build and Push Docker Images (runs only if tests pass)
   build_and_push_images:
     runs-on: ubuntu-latest
-    needs: test_and_lint_backends
+    needs: test_and_lint_backends # ensures tests must pass
 
     steps:
     - name: Checkout repository
