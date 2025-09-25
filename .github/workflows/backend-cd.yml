@@ -22,7 +22,6 @@ on:
     types:
         - completed
 
-
 jobs:
   deploy_staging:
     runs-on: ubuntu-latest
