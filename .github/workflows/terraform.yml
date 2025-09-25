@@ -1,0 +1,29 @@
+name: Terraform/OpenTofu - Provision Infra
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform_apply:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        working-directory: terraform/
+        run: terraform init --upgrade
+
+      - name: Terraform Plan
+        working-directory: terraform/
+        run: terraform plan 
+
+      - name: Terraform Apply
+        working-directory: terraform/
+        run: terraform apply --auto-approve
