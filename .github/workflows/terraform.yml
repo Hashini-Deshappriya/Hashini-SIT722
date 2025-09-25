@@ -20,10 +20,10 @@ jobs:
         with:
           terraform_version: 1.6.0
       
-      
+      - name : Azure login
+        run: az login
 
       - name: Terraform Init
-        run: az login
         run: terraform init --upgrade
         
       - name: Terraform Plan
