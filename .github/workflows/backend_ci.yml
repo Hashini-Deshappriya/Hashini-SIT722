@@ -11,7 +11,7 @@ on:
   # Automatically on pushes to testing  branch
   push:
     branches:
-      - testing
+      - staging
     paths: # Only trigger if changes are in backend directories
       - 'backend/**'
       - '.github/workflows/backend_ci.yml' # Trigger if this workflow file changes
