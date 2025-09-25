@@ -23,6 +23,7 @@ jobs:
       
 
       - name: Terraform Init
+        run: az login
         run: terraform init --upgrade
         
       - name: Terraform Plan
