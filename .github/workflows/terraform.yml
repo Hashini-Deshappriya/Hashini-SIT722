@@ -20,9 +20,6 @@ jobs:
         with:
           terraform_version: 1.6.0
       
-      - name : Azure login
-        run: az login
-
       - name: Terraform Init
         run: terraform init --upgrade
         
