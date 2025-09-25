@@ -10,7 +10,7 @@ on:
       aks_resource_group:
         description: 'Resource Group of the AKS Cluster'
         required: true
-        default: 'deakinuni'
+        default: 'hashini'
       aks_acr_name:
         description: 'Name of ACR'
         required: true
