@@ -19,6 +19,11 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.6.0
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ eoaw49SOU*ic }}
 
       - name: Terraform Init
         run: terraform init --upgrade
