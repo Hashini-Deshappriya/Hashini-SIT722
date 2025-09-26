@@ -136,7 +136,7 @@ jobs:
     - name: Scan Product Service Docker Image with Trivy
       run: |
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
-        ./trivy image --exit-code 1 --severity HIGH,CRITICAL ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
+        ./bin/trivy image --exit-code 1 --severity HIGH,CRITICAL ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
 
 
     # Build and Push Docker image for Order Service
