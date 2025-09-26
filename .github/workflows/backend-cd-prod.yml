@@ -50,7 +50,7 @@ jobs:
 
       - name: Set Kubernetes context (get AKS credentials)
         run: |
-          az aks get-credentials --resource-group deakinuni --name hashini --overwrite-existing
+          az aks get-credentials --resource-group hashini --name hashini --overwrite-existing
 
       - name: Attach ACR
         run: |

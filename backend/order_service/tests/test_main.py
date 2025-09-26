@@ -8,12 +8,14 @@ from app.db import SessionLocal, engine, get_db
 from app.main import app
 from app.models import Base, Order, OrderItem
 
+
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 # Make PRODUCT_SERVICE_URL configurable via env var (better for CI/CD + staging)
 PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", "http://localhost:8001")

@@ -3,6 +3,36 @@
 version: "3.8"
 
 services:
+
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml --web.enable-remote-write-receiver --web.enable-lifecycle # Standard command
+    ports:
+      - "9090:9090"
+    depends_on:
+      product_service:
+        condition: service_started
+      order_service:
+        condition: service_started
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    depends_on:
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+
   product_db:
     image: postgres:15-alpine
     container_name: product_db_container
@@ -53,9 +83,9 @@ services:
       - "8000:8000"
     environment:
       POSTGRES_HOST: product_db # Connects to the 'product_db' service within Docker network
-      AZURE_STORAGE_ACCOUNT_NAME: <your_storage_account_name> # Replace with your Azure Storage account name
-      AZURE_STORAGE_ACCOUNT_KEY: <your_storage_account_key> # Replace with your Azure Storage account key
-      AZURE_STORAGE_CONTAINER_NAME: <your_container_name> # Replace with your Azure Storage container name
+      AZURE_STORAGE_ACCOUNT_NAME: "hashini" # Replace with your Azure Storage account name
+      AZURE_STORAGE_ACCOUNT_KEY: "Bg6Oi2LD9hrXujUTrPkteRZSPoNwLIsQN7L2fXXM2XMe3Fo0w/UawZrBnsRxL7IGY/4aNlT/nV3X+AStYi5hUw==" # Replace with your Azure Storage account key
+      AZURE_STORAGE_CONTAINER_NAME: "hashini" # Replace with your Azure Storage container name
       AZURE_SAS_TOKEN_EXPIRY_HOURS: 24
     depends_on:
       product_db:
