@@ -149,6 +149,58 @@ LOW_STOCK_ALERTS_TOTAL = Counter(
     'low_stock_alerts_total', 'Total alerts triggered for low stock',
     ['app_name', 'product_id', 'product_name'], registry=registry
 )
+# --- FastAPI Application Setup ---
+app = FastAPI(
+    title="Product Service API",
+    description="Manages products and stock for mini-ecommerce app, with Azure Storage integration.",
+    version="1.0.0",
+)
+
+# Enable CORS (for frontend dev/testing)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Use specific origins in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- Middleware for Prometheus Metrics ---
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    # Exclude the /metrics endpoint itself from being tracked
+    if request.url.path == "/metrics":
+        response = await call_next(request)
+        return response
+
+    method = request.method
+    endpoint = request.url.path
+
+    # Increment requests in progress
+    REQUESTS_IN_PROGRESS.labels(app_name=APP_NAME, method=method, endpoint=endpoint).inc()
+    start_time = time.time()
+
+    response = await call_next(request) # Process the actual request
+
+    process_time = time.time() - start_time
+    status_code = response.status_code
+
+    # Decrement requests in progress
+    REQUESTS_IN_PROGRESS.labels(app_name=APP_NAME, method=method, endpoint=endpoint).dec()
+    # Increment total requests
+    REQUEST_COUNT.labels(app_name=APP_NAME, method=method, endpoint=endpoint, status_code=status_code).inc()
+    # Observe duration for request latency
+    REQUEST_DURATION.labels(app_name=APP_NAME, method=method, endpoint=endpoint, status_code=status_code).observe(process_time)
+
+    return response
+
+# --- Prometheus Metrics Endpoint ---
+# This is the endpoint Prometheus will scrape to collect metrics.
+@app.get("/metrics", response_class=PlainTextResponse, summary="Prometheus metrics endpoint")
+async def metrics():
+    # generate_latest collects all metrics from the registry and formats them for Prometheus
+    return PlainTextResponse(generate_latest(registry))
+
 
 
 # --- RabbitMQ Configuration ---
