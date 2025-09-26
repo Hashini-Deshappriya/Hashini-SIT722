@@ -68,6 +68,10 @@ jobs:
           kubectl apply -f secrets.yaml
           kubectl apply -f product-db.yaml
           kubectl apply -f order-db.yaml
+          kubectl apply -f grafana-deployment.yaml
+          kubectl apply -f prometheus-configmap.yaml
+          kubectl apply -f prometheus-deployment.yaml
+          kubectl apply -f prometheus-rbac.yaml
 
       - name: Deploy Backend Microservices (Product, Order) to Production
         run: |
@@ -75,6 +79,12 @@ jobs:
           cd k8s/
           kubectl apply -f product-service.yaml
           kubectl apply -f order-service.yaml
+
+      - name: Deploy Prometheus Microservice to Production
+        run: |
+          echo "Deploying prometheus microservices..."
+          cd prometheus/
+          kubectl apply -f prometheus.yml --validate=false
       
       - name: Wait for Backend LoadBalancer IPs
         run: |
