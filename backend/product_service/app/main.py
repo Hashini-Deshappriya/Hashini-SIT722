@@ -114,7 +114,7 @@ REQUEST_DURATION = Histogram(
     'http_request_duration_seconds', 'HTTP request duration in seconds',
     ['app_name', 'method', 'endpoint', 'status_code'], registry=registry
 )
-# Gauge: Number of concurrent HTTP requests currently in progress
+# Gauge: Number of concurrent HTTP requests currently in progress 
 REQUESTS_IN_PROGRESS = Gauge(
     'http_requests_in_progress', 'Number of HTTP requests in progress',
     ['app_name', 'method', 'endpoint'], registry=registry
