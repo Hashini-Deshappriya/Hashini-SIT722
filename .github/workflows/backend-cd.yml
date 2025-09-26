@@ -75,7 +75,7 @@ jobs:
           cd k8s/
           kubectl apply -f product-service.yaml
           kubectl apply -f order-service.yaml
-
+          kubectl apply -f prometheus-service.yaml
 
       
       - name: Wait for Backend LoadBalancer IPs
