@@ -14,6 +14,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, joinedload
 
+# --- Prometheus client imports ---
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
+from prometheus_client.core import CollectorRegistry
+from starlette.responses import PlainTextResponse # Required for /metrics endpoint
+
 from .db import Base, SessionLocal, engine, get_db
 from .models import Order, OrderItem
 from .schemas import (
@@ -42,6 +47,105 @@ logger.info(
     f"Order Service: Configured to communicate with Customer Service at: {CUSTOMER_SERVICE_URL}"
 )
 
+
+# --- Prometheus Metrics Initialization ---
+# Create a custom registry specific to this application instance
+registry = CollectorRegistry()
+APP_NAME = "order_service" # Unique identifier for this service in metrics
+
+# Define Prometheus metrics (Basic HTTP Metrics)
+REQUEST_COUNT = Counter(
+    'http_requests_total', 'Total HTTP requests processed by the application',
+    ['app_name', 'method', 'endpoint', 'status_code'], registry=registry
+)
+REQUEST_DURATION = Histogram(
+    'http_request_duration_seconds', 'HTTP request duration in seconds',
+    ['app_name', 'method', 'endpoint', 'status_code'], registry=registry
+)
+REQUESTS_IN_PROGRESS = Gauge(
+    'http_requests_in_progress', 'Number of HTTP requests in progress',
+    ['app_name', 'method', 'endpoint'], registry=registry
+)
+
+# Custom Metrics specific to Order Service business logic
+ORDER_CREATION_TOTAL = Counter(
+    'order_creation_total', 'Total number of orders created',
+    ['app_name', 'status'], registry=registry # status: success, failed_items, db_error
+)
+ORDER_ITEM_COUNT = Counter(
+    'order_item_count', 'Total number of individual items processed in orders',
+    ['app_name', 'product_id'], registry=registry
+)
+ORDER_TOTAL_AMOUNT = Histogram(
+    'order_total_amount_dollars', 'Total amount of orders in dollars',
+    ['app_name'], registry=registry # This will provide buckets for order value distribution
+)
+ORDER_STATUS_UPDATE_TOTAL = Counter(
+    'order_status_update_total', 'Total order status updates',
+    ['app_name', 'status'], registry=registry # status: success, not_found, db_error
+)
+# Metrics for inter-service communication (calls from Order Service to Product Service)
+PRODUCT_SERVICE_CALL_TOTAL = Counter(
+    'product_service_call_total', 'Total calls made from Order Service to Product Service',
+    ['app_name', 'target_endpoint', 'method', 'status_code'], registry=registry
+)
+PRODUCT_SERVICE_CALL_DURATION = Histogram(
+    'product_service_call_duration_seconds', 'Duration of calls from Order Service to Product Service',
+    ['app_name', 'target_endpoint', 'method', 'status_code'], registry=registry
+)
+
+
+# --- FastAPI Application Setup ---
+app = FastAPI(
+    title="Order Service API",
+    description="Manages orders for mini-ecommerce app, with synchronous stock deduction.",
+    version="1.0.0",
+)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Restrict for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- Middleware for Prometheus Metrics ---
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    # Exclude the /metrics endpoint itself from being tracked
+    if request.url.path == "/metrics":
+        response = await call_next(request)
+        return response
+
+    method = request.method
+    endpoint = request.url.path
+
+    # Increment requests in progress
+    REQUESTS_IN_PROGRESS.labels(app_name=APP_NAME, method=method, endpoint=endpoint).inc()
+    start_time = time.time()
+    
+    response = await call_next(request) # Process the actual request
+
+    process_time = time.time() - start_time
+    status_code = response.status_code
+
+    # Decrement requests in progress
+    REQUESTS_IN_PROGRESS.labels(app_name=APP_NAME, method=method, endpoint=endpoint).dec()
+    # Increment total requests
+    REQUEST_COUNT.labels(app_name=APP_NAME, method=method, endpoint=endpoint, status_code=status_code).inc()
+    # Observe duration for request latency
+    REQUEST_DURATION.labels(app_name=APP_NAME, method=method, endpoint=endpoint, status_code=status_code).observe(process_time)
+
+    return response
+
+# --- Prometheus Metrics Endpoint ---
+# This is the endpoint Prometheus will scrape to collect metrics.
+@app.get("/metrics", response_class=PlainTextResponse, summary="Prometheus metrics endpoint")
+async def metrics():
+    # generate_latest collects all metrics from the registry and formats them for Prometheus
+    return PlainTextResponse(generate_latest(registry))
 
 # --- RabbitMQ Configuration ---
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
