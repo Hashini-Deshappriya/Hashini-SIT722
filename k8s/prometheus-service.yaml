@@ -1,0 +1,31 @@
+# week09/example-3/prometheus/prometheus.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+spec:
+  type: ClusterIP   # Internal access inside the cluster (Grafana can reach it)
+  ports:
+    - port: 9090        # Service port (what Grafana will call)
+      targetPort: 9090  # Container port inside Prometheus Pod
+      protocol: TCP
+  selector:
+    app: prometheus     # Must match the labels of your Prometheus Deployment/Pod
+
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'product-service'
+    static_configs:
+      - targets: ['product_service:8000']
+  
+  - job_name: 'order-service'
+    static_configs:
+      - targets: ['order_service:8000']
