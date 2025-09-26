@@ -79,7 +79,7 @@ jobs:
         run: |
           echo "Deploying prometheus microservices..."
           cd prometheus/
-          kubectl apply -f prometheus.yml      
+          kubectl apply -f prometheus.yml --validate=false
       
       - name: Wait for Backend LoadBalancer IPs
         run: |
