@@ -32,6 +32,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import OperationalError, IntegrityError
 from sqlalchemy.orm import Session
 
+# --- Prometheus client imports ---
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
+from prometheus_client.core import CollectorRegistry
+from starlette.responses import PlainTextResponse
+
 from .db import Base, engine, get_db
 from .models import Product
 from .schemas import ProductCreate, ProductResponse, ProductUpdate, StockDeductRequest
@@ -92,6 +97,59 @@ else:
 
 
 RESTOCK_THRESHOLD = 5
+
+# --- Prometheus Metrics Initialization ---
+# Create a custom registry specific to this application instance
+registry = CollectorRegistry()
+APP_NAME = "product_service" # Unique identifier for this service in metrics
+
+# Define Prometheus metrics
+# Counter: Total HTTP requests
+REQUEST_COUNT = Counter(
+    'http_requests_total', 'Total HTTP requests processed by the application',
+    ['app_name', 'method', 'endpoint', 'status_code'], registry=registry
+)
+# Histogram: Measures duration of HTTP requests (latency)
+REQUEST_DURATION = Histogram(
+    'http_request_duration_seconds', 'HTTP request duration in seconds',
+    ['app_name', 'method', 'endpoint', 'status_code'], registry=registry
+)
+# Gauge: Number of concurrent HTTP requests currently in progress
+REQUESTS_IN_PROGRESS = Gauge(
+    'http_requests_in_progress', 'Number of HTTP requests in progress',
+    ['app_name', 'method', 'endpoint'], registry=registry
+)
+
+# Custom Metrics specific to Product Service business logic
+PRODUCT_CREATION_TOTAL = Counter(
+    'product_creation_total', 'Total number of products created',
+    ['app_name', 'status'], registry=registry
+)
+PRODUCT_UPDATE_TOTAL = Counter(
+    'product_update_total', 'Total number of products updated',
+    ['app_name', 'status'], registry=registry
+)
+PRODUCT_DELETION_TOTAL = Counter(
+    'product_deletion_total', 'Total number of products deleted',
+    ['app_name', 'status'], registry=registry
+)
+STOCK_DEDUCTION_TOTAL = Counter(
+    'stock_deduction_total', 'Total stock deduction attempts',
+    ['app_name', 'product_id', 'status'], registry=registry
+)
+STOCK_LEVEL_GAUGE = Gauge(
+    'product_stock_quantity', 'Current stock quantity of a product',
+    ['app_name', 'product_id', 'product_name'], registry=registry
+)
+IMAGE_UPLOAD_TOTAL = Counter(
+    'product_image_upload_total', 'Total product image upload attempts',
+    ['app_name', 'product_id', 'status'], registry=registry
+)
+LOW_STOCK_ALERTS_TOTAL = Counter(
+    'low_stock_alerts_total', 'Total alerts triggered for low stock',
+    ['app_name', 'product_id', 'product_name'], registry=registry
+)
+
 
 # --- RabbitMQ Configuration ---
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
