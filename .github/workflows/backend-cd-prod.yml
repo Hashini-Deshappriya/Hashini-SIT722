@@ -80,11 +80,7 @@ jobs:
           kubectl apply -f product-service.yaml
           kubectl apply -f order-service.yaml
 
-      - name: Deploy Prometheus Microservice to Production
-        run: |
-          echo "Deploying prometheus microservices..."
-          cd prometheus/
-          kubectl apply -f prometheus.yml --validate=false
+
       
       - name: Wait for Backend LoadBalancer IPs
         run: |
