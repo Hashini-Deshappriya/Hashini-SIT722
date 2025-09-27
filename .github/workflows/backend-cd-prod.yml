@@ -25,7 +25,6 @@ on:
       types:
           - completed
 
-
 jobs:
   deploy_production:
     runs-on: ubuntu-latest
