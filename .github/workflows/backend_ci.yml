@@ -139,7 +139,7 @@ jobs:
         ./bin/trivy image --exit-code 0 --severity HIGH,CRITICAL ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
 
     # Push Docker image for Product Service
-    - name: Push Product Service Image after security scan
+    - name: Push Product Service Image after security scanning
       run: |
         docker push ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
     
