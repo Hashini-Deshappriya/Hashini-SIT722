@@ -7,7 +7,7 @@ on:
   # Manual trigger
   workflow_dispatch:
 
-  # Automatically on pushes to testing  branch
+  # Automatically on pushes to staging  branch
   push:
     branches:
       - staging
@@ -127,16 +127,36 @@ jobs:
     - name: Login to Azure Container Registry
       run: az acr login --name ${{ env.ACR_LOGIN_SERVER }}
 
-    # Build and Push Docker image for Product Service
-    - name: Build and Push Product Service Image
+    # Build Docker image for Product Service
+    - name: Build Product Service Image
       run: |
         docker build -t ${{ env.ACR_LOGIN_SERVER }}/product_service:latest ./backend/product_service/
-        docker push ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
+        
+    # Scan for Product Service with Trivy scanner
+    - name: Scan Product Service Docker Image with Trivy
+      run: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+        ./bin/trivy image --exit-code 0 --severity HIGH,CRITICAL ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
 
+    # Push Docker image for Product Service
+    - name: Push Product Service Image after security scan
+      run: |
+        docker push ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
+    
     # Build and Push Docker image for Order Service
-    - name: Build and Push Order Service Image
+    - name: Build Order Service Image
       run: |
         docker build -t ${{ env.ACR_LOGIN_SERVER }}/order_service:latest ./backend/order_service/
+        
+
+    # Scan for Order Service with Trivy scanner
+    - name: Scan Order Service Docker Image with Trivy
+      run: |
+        ./bin/trivy image --exit-code 0 --severity HIGH,CRITICAL ${{ env.ACR_LOGIN_SERVER }}/order_service:latest
+
+    # Push Docker image for Order Service after security scan
+    - name: Push Order Service Image after security scan
+      run: |
         docker push ${{ env.ACR_LOGIN_SERVER }}/order_service:latest
 
     # Logout from Azure for security (runs even if image push fails)

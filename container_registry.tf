@@ -1,7 +1,7 @@
 # week06/container-registry.tf
 
 resource "azurerm_container_registry" "acr" {
-  name                = "hashini"
+  name                = "hashini1"
   resource_group_name = azurerm_resource_group.my_resource_group.name
   location            = var.location
   sku                 = "Basic"
